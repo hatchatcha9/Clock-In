@@ -1,0 +1,164 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    width: 100%;
+    max-width: 500px;
+}
+
+h1 {
+    color: #1a1a2e;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 32px;
+}
+
+h2 {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+}
+
+.timer-display {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+#timer {
+    font-size: 56px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: #1a1a2e;
+}
+
+.status {
+    text-align: center;
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.status.active {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 35px;
+}
+
+.btn {
+    flex: 1;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.clock-in {
+    background: #27ae60;
+    color: white;
+}
+
+.clock-in:hover:not(:disabled) {
+    background: #219a52;
+}
+
+.clock-out {
+    background: #e74c3c;
+    color: white;
+}
+
+.clock-out:hover:not(:disabled) {
+    background: #c0392b;
+}
+
+.summary {
+    margin-bottom: 30px;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat {
+    flex: 1;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.history ul {
+    list-style: none;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.history-item .time-range {
+    color: #333;
+    font-size: 15px;
+}
+
+.history-item .duration {
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+.empty-history {
+    color: #999;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}

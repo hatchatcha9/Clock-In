@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock In</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Clock In</h1>
+
+        <div class="timer-display">
+            <span id="timer">00:00:00</span>
+        </div>
+
+        <div class="status" id="status">Not clocked in</div>
+
+        <div class="buttons">
+            <button id="clock-in-btn" class="btn clock-in">Clock In</button>
+            <button id="clock-out-btn" class="btn clock-out" disabled>Clock Out</button>
+        </div>
+
+        <div class="summary">
+            <h2>Today's Summary</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="stat-label">Total Hours</span>
+                    <span class="stat-value" id="total-hours">0:00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Sessions</span>
+                    <span class="stat-value" id="session-count">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="history">
+            <h2>History</h2>
+            <ul id="history-list"></ul>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
