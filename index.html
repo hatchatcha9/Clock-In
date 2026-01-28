@@ -8,38 +8,390 @@
 </head>
 <body>
     <div class="container">
-        <h1>Clock In</h1>
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="screen active">
+            <div class="auth-content">
+                <h1>Clock In</h1>
+                <p class="tagline">Time Management</p>
 
-        <div class="timer-display">
-            <span id="timer">00:00:00</span>
-        </div>
+                <div class="auth-forms">
+                    <!-- Login Form -->
+                    <form id="login-form" class="auth-form active">
+                        <h2>Sign In</h2>
 
-        <div class="status" id="status">Not clocked in</div>
+                        <div class="form-field">
+                            <label for="login-username">Username or Email</label>
+                            <input type="text" id="login-username" required autocomplete="username">
+                        </div>
 
-        <div class="buttons">
-            <button id="clock-in-btn" class="btn clock-in">Clock In</button>
-            <button id="clock-out-btn" class="btn clock-out" disabled>Clock Out</button>
-        </div>
+                        <div class="form-field">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" required autocomplete="current-password">
+                        </div>
 
-        <div class="summary">
-            <h2>Today's Summary</h2>
-            <div class="summary-stats">
-                <div class="stat">
-                    <span class="stat-label">Total Hours</span>
-                    <span class="stat-value" id="total-hours">0:00</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Sessions</span>
-                    <span class="stat-value" id="session-count">0</span>
+                        <div class="auth-error" id="login-error"></div>
+
+                        <button type="submit" class="btn auth-submit">Sign In</button>
+
+                        <p class="auth-switch">
+                            Don't have an account?
+                            <button type="button" class="link-btn" id="show-register">Create one</button>
+                        </p>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="register-form" class="auth-form">
+                        <h2>Create Account</h2>
+
+                        <div class="form-field">
+                            <label for="register-username">Username</label>
+                            <input type="text" id="register-username" required minlength="3" autocomplete="username">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" required autocomplete="email">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="register-password">Password</label>
+                            <input type="password" id="register-password" required minlength="8" autocomplete="new-password">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="register-confirm">Confirm Password</label>
+                            <input type="password" id="register-confirm" required minlength="8" autocomplete="new-password">
+                        </div>
+
+                        <div class="auth-error" id="register-error"></div>
+
+                        <button type="submit" class="btn auth-submit">Create Account</button>
+
+                        <p class="auth-switch">
+                            Already have an account?
+                            <button type="button" class="link-btn" id="show-login">Sign in</button>
+                        </p>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <div class="history">
-            <h2>History</h2>
-            <ul id="history-list"></ul>
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen">
+            <div class="home-content">
+                <div class="home-header">
+                    <h1>Clock In</h1>
+                    <button class="logout-btn" id="logout-btn" title="Sign Out">
+                        <span class="logout-icon">&#8617;</span>
+                        <span class="logout-text">Sign Out</span>
+                    </button>
+                </div>
+                <p class="tagline">Time Management</p>
+
+                <!-- Active Session Display -->
+                <div class="home-timer" id="home-timer-section">
+                    <div class="home-timer-display">
+                        <span id="home-timer">00:00:00</span>
+                    </div>
+                    <div class="home-timer-status" id="home-timer-status">Not clocked in</div>
+                </div>
+
+                <nav class="nav-grid">
+                <button class="nav-card" data-screen="clockin-screen">
+                    <span class="nav-icon">&#9201;</span>
+                    <span class="nav-title">Clock In / Out</span>
+                    <span class="nav-desc">Track your work hours</span>
+                </button>
+
+                <button class="nav-card" data-screen="dashboard-screen">
+                    <span class="nav-icon">&#9635;</span>
+                    <span class="nav-title">Dashboard</span>
+                    <span class="nav-desc">Visual overview</span>
+                </button>
+
+                <button class="nav-card" data-screen="reports-screen">
+                    <span class="nav-icon">&#9776;</span>
+                    <span class="nav-title">Reports</span>
+                    <span class="nav-desc">View your time reports</span>
+                </button>
+
+                <button class="nav-card" data-screen="settings-screen">
+                    <span class="nav-icon">&#9881;</span>
+                    <span class="nav-title">Settings</span>
+                    <span class="nav-desc">Configure preferences</span>
+                </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Clock In/Out Screen -->
+        <div id="clockin-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Clock In</h1>
+
+            <div class="timer-display">
+                <span id="timer">00:00:00</span>
+                <span id="break-indicator" class="break-indicator hidden">ON BREAK</span>
+            </div>
+
+            <div class="status" id="status">Not clocked in</div>
+
+            <!-- Project Selector -->
+            <div class="project-selector" id="project-selector">
+                <label for="current-project">Project</label>
+                <select id="current-project">
+                    <option value="">No Project</option>
+                </select>
+            </div>
+
+            <div class="buttons">
+                <button id="clock-in-btn" class="btn clock-in">Clock In</button>
+                <button id="break-btn" class="btn break-btn" disabled>Break</button>
+                <button id="clock-out-btn" class="btn clock-out" disabled>Clock Out</button>
+            </div>
+
+            <div class="summary">
+                <h2>Today's Summary</h2>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-label">Total Hours</span>
+                        <span class="stat-value" id="total-hours">0:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value" id="session-count">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Earned Today</span>
+                        <span class="stat-value" id="today-earnings">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Dashboard</h1>
+
+            <div class="dashboard-grid">
+                <div class="chart-section">
+                    <h2>Hours This Week</h2>
+                    <div class="bar-chart" id="weekly-chart">
+                        <div class="chart-bar" data-day="0"><div class="bar-fill"></div><span>Sun</span></div>
+                        <div class="chart-bar" data-day="1"><div class="bar-fill"></div><span>Mon</span></div>
+                        <div class="chart-bar" data-day="2"><div class="bar-fill"></div><span>Tue</span></div>
+                        <div class="chart-bar" data-day="3"><div class="bar-fill"></div><span>Wed</span></div>
+                        <div class="chart-bar" data-day="4"><div class="bar-fill"></div><span>Thu</span></div>
+                        <div class="chart-bar" data-day="5"><div class="bar-fill"></div><span>Fri</span></div>
+                        <div class="chart-bar" data-day="6"><div class="bar-fill"></div><span>Sat</span></div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h2>Time by Project</h2>
+                    <div class="project-chart" id="project-chart"></div>
+                </div>
+
+                <div class="stats-overview">
+                    <h2>Monthly Overview</h2>
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-label">This Month</span>
+                            <span class="stat-value" id="monthly-hours">0:00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Monthly Earnings</span>
+                            <span class="stat-value" id="monthly-earnings">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Screen -->
+        <div id="reports-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Reports</h1>
+
+            <div class="weekly-report">
+                <div class="report-header">
+                    <h2>Weekly Report</h2>
+                    <button class="share-btn" id="share-weekly-btn" title="Share Weekly Report">
+                        <span class="share-icon">&#9993;</span> Share
+                    </button>
+                </div>
+                <div class="report-period" id="report-period">Week of Jan 19 - Jan 25</div>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-label">Time Worked</span>
+                        <span class="stat-value" id="weekly-hours">0:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Money Earned</span>
+                        <span class="stat-value" id="weekly-earnings">$0.00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value" id="weekly-sessions">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="daily-report">
+                <div class="report-header">
+                    <h2>Today's Report</h2>
+                    <button class="share-btn" id="share-daily-btn" title="Share Daily Report">
+                        <span class="share-icon">&#9993;</span> Share
+                    </button>
+                </div>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-label">Time Worked</span>
+                        <span class="stat-value" id="daily-hours">0:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Money Earned</span>
+                        <span class="stat-value" id="daily-earnings">$0.00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value" id="daily-sessions">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history">
+                <h2>Session History</h2>
+                <ul id="history-list"></ul>
+            </div>
+
+            <div class="past-reports">
+                <h2>Past Weekly Reports</h2>
+                <ul id="past-reports-list"></ul>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Settings</h1>
+
+            <div class="settings-group">
+                <h2>Earnings</h2>
+                <div class="setting-item">
+                    <label for="hourly-rate">Hourly Rate</label>
+                    <div class="input-group">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="hourly-rate" min="0" step="0.01" value="0">
+                        <span class="input-suffix">/ hour</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h2>Projects</h2>
+                <div class="projects-list" id="projects-list"></div>
+                <div class="add-project">
+                    <input type="text" id="new-project-name" placeholder="New project name">
+                    <button class="btn add-project-btn" id="add-project-btn">Add</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h2>Display</h2>
+                <div class="setting-item">
+                    <label for="text-size">Text Size</label>
+                    <div class="size-options">
+                        <button class="size-btn" data-size="small">Small</button>
+                        <button class="size-btn active" data-size="medium">Medium</button>
+                        <button class="size-btn" data-size="large">Large</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn save-btn" id="save-settings">Save Settings</button>
+
+            <!-- Data Migration Section -->
+            <div class="settings-group" id="migration-section" style="display: none;">
+                <h2>Import Local Data</h2>
+                <p class="migration-notice">You have existing local data. Would you like to import it to your account?</p>
+                <button class="btn import-btn" id="import-data-btn">Import Local Data</button>
+            </div>
         </div>
     </div>
+
+    <!-- Edit Session Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <h2>Edit Session</h2>
+            <input type="hidden" id="edit-session-id">
+
+            <div class="modal-field">
+                <label>Clock In</label>
+                <input type="datetime-local" id="edit-clock-in">
+            </div>
+
+            <div class="modal-field">
+                <label>Clock Out</label>
+                <input type="datetime-local" id="edit-clock-out">
+            </div>
+
+            <div class="modal-field">
+                <label>Project</label>
+                <select id="edit-project"></select>
+            </div>
+
+            <div class="modal-field">
+                <label>Notes</label>
+                <textarea id="edit-notes" rows="3" placeholder="What did you work on?"></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn delete-btn" id="delete-session-btn">Delete</button>
+                <button class="btn cancel-btn" id="cancel-edit-btn">Cancel</button>
+                <button class="btn save-btn" id="save-edit-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clock Out Modal (for notes) -->
+    <div class="modal-overlay" id="clockout-modal">
+        <div class="modal">
+            <h2>Session Complete</h2>
+
+            <div class="modal-field">
+                <label>Notes (optional)</label>
+                <textarea id="clockout-notes" rows="3" placeholder="What did you work on?"></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn cancel-btn" id="skip-notes-btn">Skip</button>
+                <button class="btn save-btn" id="save-notes-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Report Modal -->
+    <div class="modal-overlay" id="share-modal">
+        <div class="modal">
+            <h2 id="share-modal-title">Share Report</h2>
+
+            <div class="modal-field">
+                <label for="share-email">Recipient Email</label>
+                <input type="email" id="share-email" placeholder="email@example.com" required>
+            </div>
+
+            <div class="share-status" id="share-status"></div>
+
+            <div class="modal-buttons">
+                <button class="btn cancel-btn" id="cancel-share-btn">Cancel</button>
+                <button class="btn save-btn" id="send-share-btn">Send Email</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
