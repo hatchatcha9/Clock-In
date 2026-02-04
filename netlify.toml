@@ -68,3 +68,9 @@
   from = "/api/health"
   to = "/.netlify/functions/health"
   status = 200
+
+# SPA fallback - serve index.html for all other routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
