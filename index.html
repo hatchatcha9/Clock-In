@@ -92,7 +92,7 @@
             <div class="home-content">
                 <div class="home-header">
                     <h1>Clock In</h1>
-                    <button class="logout-btn" id="logout-btn" title="Sign Out">
+                    <button type="button" class="logout-btn" id="logout-btn" title="Sign Out">
                         <span class="logout-icon">&#8617;</span>
                         <span class="logout-text">Sign Out</span>
                     </button>
@@ -169,9 +169,9 @@
             </div>
 
             <div class="buttons">
-                <button id="clock-in-btn" class="btn clock-in">Clock In</button>
-                <button id="break-btn" class="btn break-btn" disabled>Break</button>
-                <button id="clock-out-btn" class="btn clock-out" disabled>Clock Out</button>
+                <button type="button" id="clock-in-btn" class="btn clock-in">Clock In</button>
+                <button type="button" id="break-btn" class="btn break-btn" disabled>Break</button>
+                <button type="button" id="clock-out-btn" class="btn clock-out" disabled>Clock Out</button>
             </div>
 
             <div class="summary">
@@ -241,7 +241,7 @@
             <div class="weekly-report">
                 <div class="report-header">
                     <h2>Weekly Report</h2>
-                    <button class="share-btn" id="share-weekly-btn" title="Share Weekly Report">
+                    <button type="button" class="share-btn" id="share-weekly-btn" title="Share Weekly Report">
                         <span class="share-icon">&#9993;</span> Share
                     </button>
                 </div>
@@ -265,7 +265,7 @@
             <div class="daily-report">
                 <div class="report-header">
                     <h2>Today's Report</h2>
-                    <button class="share-btn" id="share-daily-btn" title="Share Daily Report">
+                    <button type="button" class="share-btn" id="share-daily-btn" title="Share Daily Report">
                         <span class="share-icon">&#9993;</span> Share
                     </button>
                 </div>
@@ -318,7 +318,7 @@
                 <div class="projects-list" id="projects-list"></div>
                 <div class="add-project">
                     <input type="text" id="new-project-name" placeholder="New project name">
-                    <button class="btn add-project-btn" id="add-project-btn">Add</button>
+                    <button type="button" class="btn add-project-btn" id="add-project-btn">Add</button>
                 </div>
             </div>
 
@@ -327,9 +327,9 @@
                 <div class="setting-item">
                     <label for="text-size">Text Size</label>
                     <div class="size-options">
-                        <button class="size-btn" data-size="small">Small</button>
-                        <button class="size-btn active" data-size="medium">Medium</button>
-                        <button class="size-btn" data-size="large">Large</button>
+                        <button type="button" class="size-btn" data-size="small">Small</button>
+                        <button type="button" class="size-btn active" data-size="medium">Medium</button>
+                        <button type="button" class="size-btn" data-size="large">Large</button>
                     </div>
                 </div>
             </div>
@@ -342,13 +342,13 @@
                 </div>
             </div>
 
-            <button class="btn save-btn" id="save-settings">Save Settings</button>
+            <button type="button" class="btn save-btn" id="save-settings">Save Settings</button>
 
             <!-- Data Migration Section -->
             <div class="settings-group" id="migration-section" style="display: none;">
                 <h2>Import Local Data</h2>
                 <p class="migration-notice">You have existing local data. Would you like to import it to your account?</p>
-                <button class="btn import-btn" id="import-data-btn">Import Local Data</button>
+                <button type="button" class="btn import-btn" id="import-data-btn">Import Local Data</button>
             </div>
         </div>
 
@@ -358,7 +358,7 @@
             <h1>Messages</h1>
 
             <div id="new-request-section" style="display: none;">
-                <button class="btn request-change-btn" id="new-request-btn">New Hour Change Request</button>
+                <button type="button" class="btn request-change-btn" id="new-request-btn">New Hour Change Request</button>
             </div>
 
             <div id="messages-list"></div>
@@ -373,7 +373,7 @@
                 <h2>Add Employee</h2>
                 <div class="add-employee-group">
                     <input type="text" id="employee-code-input" placeholder="Enter employee code" maxlength="8">
-                    <button class="btn add-employee-btn" id="add-employee-btn">Add</button>
+                    <button type="button" class="btn add-employee-btn" id="add-employee-btn">Add</button>
                 </div>
                 <div class="admin-error" id="admin-add-error"></div>
             </div>
@@ -436,7 +436,7 @@
             </div>
 
             <div class="employee-actions">
-                <button class="btn delete-btn" id="remove-employee-btn">Remove Employee</button>
+                <button type="button" class="btn delete-btn" id="remove-employee-btn">Remove Employee</button>
             </div>
         </div>
 
@@ -501,9 +501,9 @@
             </div>
 
             <div class="modal-buttons">
-                <button class="btn delete-btn" id="delete-session-btn">Delete</button>
-                <button class="btn cancel-btn" id="cancel-edit-btn">Cancel</button>
-                <button class="btn save-btn" id="save-edit-btn">Save</button>
+                <button type="button" class="btn delete-btn" id="delete-session-btn">Delete</button>
+                <button type="button" class="btn cancel-btn" id="cancel-edit-btn">Cancel</button>
+                <button type="button" class="btn save-btn" id="save-edit-btn">Save</button>
             </div>
         </div>
     </div>
@@ -519,8 +519,8 @@
             </div>
 
             <div class="modal-buttons">
-                <button class="btn cancel-btn" id="skip-notes-btn">Skip</button>
-                <button class="btn save-btn" id="save-notes-btn">Save</button>
+                <button type="button" class="btn cancel-btn" id="skip-notes-btn">Skip</button>
+                <button type="button" class="btn save-btn" id="save-notes-btn">Save</button>
             </div>
         </div>
     </div>
@@ -538,8 +538,8 @@
             <div class="share-status" id="share-status"></div>
 
             <div class="modal-buttons">
-                <button class="btn cancel-btn" id="cancel-share-btn">Cancel</button>
-                <button class="btn save-btn" id="send-share-btn">Send Email</button>
+                <button type="button" class="btn cancel-btn" id="cancel-share-btn">Cancel</button>
+                <button type="button" class="btn save-btn" id="send-share-btn">Send Email</button>
             </div>
         </div>
     </div>
@@ -575,8 +575,8 @@
             </div>
 
             <div class="modal-buttons">
-                <button class="btn cancel-btn" id="cancel-request-btn">Cancel</button>
-                <button class="btn save-btn" id="send-request-btn">Send Request</button>
+                <button type="button" class="btn cancel-btn" id="cancel-request-btn">Cancel</button>
+                <button type="button" class="btn save-btn" id="send-request-btn">Send Request</button>
             </div>
         </div>
     </div>
@@ -594,9 +594,9 @@
             </div>
 
             <div class="modal-buttons respond-buttons">
-                <button class="btn cancel-btn" id="cancel-respond-btn">Cancel</button>
-                <button class="btn delete-btn" id="deny-btn">Deny</button>
-                <button class="btn save-btn" id="approve-btn">Approve</button>
+                <button type="button" class="btn cancel-btn" id="cancel-respond-btn">Cancel</button>
+                <button type="button" class="btn delete-btn" id="deny-btn">Deny</button>
+                <button type="button" class="btn save-btn" id="approve-btn">Approve</button>
             </div>
         </div>
     </div>
@@ -619,8 +619,8 @@
             <div class="auth-success" id="forgot-success" style="display: none; color: #4CAF50; padding: 12px; background-color: #E8F5E9; border-radius: 4px; margin-bottom: 16px;"></div>
 
             <div class="modal-buttons">
-                <button class="btn cancel-btn" id="cancel-forgot-btn">Cancel</button>
-                <button class="btn save-btn" id="send-reset-btn">Send Reset Link</button>
+                <button type="button" class="btn cancel-btn" id="cancel-forgot-btn">Cancel</button>
+                <button type="button" class="btn save-btn" id="send-reset-btn">Send Reset Link</button>
             </div>
         </div>
     </div>
