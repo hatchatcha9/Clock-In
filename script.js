@@ -1460,6 +1460,39 @@ async function renderMessages() {
 
     list.innerHTML = '<p class="empty-history">Loading...</p>';
 
+    // Check if employee has any admins (for non-admin users)
+    if (!isAdmin) {
+        try {
+            const adminData = await API.getMyAdmins();
+            if (!adminData.admins || adminData.admins.length === 0) {
+                list.innerHTML = `
+                    <div class="no-admin-message" style="padding: 30px; text-align: center; background: #FAF8F5; border-radius: 8px; border: 2px solid #c9a227;">
+                        <h2 style="color: #8b7355; margin-bottom: 20px;">No Admin Assigned</h2>
+                        <p style="color: #666; margin-bottom: 15px; line-height: 1.6;">
+                            You don't have an administrator assigned to your account yet. To send hour change requests, you need to be connected with an admin.
+                        </p>
+                        <p style="color: #666; margin-bottom: 20px; line-height: 1.6;">
+                            <strong>How to get an admin:</strong>
+                        </p>
+                        <ol style="text-align: left; max-width: 500px; margin: 0 auto 20px; color: #666; line-height: 1.8;">
+                            <li>Go to <strong>Settings</strong></li>
+                            <li>Find your unique <strong>Employee Code</strong></li>
+                            <li>Share this code with your administrator</li>
+                            <li>Your admin will add you to their team using your employee code</li>
+                        </ol>
+                        <p style="color: #8b7355; font-size: 14px;">
+                            Once added by an admin, you'll be able to send hour change requests through this page.
+                        </p>
+                    </div>
+                `;
+                newRequestSection.style.display = 'none';
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check admin status:', error);
+        }
+    }
+
     try {
         const data = await API.getMessages();
         messagesCache = data.messages;
