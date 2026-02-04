@@ -1,0 +1,70 @@
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Auth routes
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/auth/:splat"
+  status = 200
+
+# Sessions routes
+[[redirects]]
+  from = "/api/sessions/*"
+  to = "/.netlify/functions/sessions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/sessions"
+  to = "/.netlify/functions/sessions"
+  status = 200
+
+# Projects routes
+[[redirects]]
+  from = "/api/projects/*"
+  to = "/.netlify/functions/projects/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/projects"
+  to = "/.netlify/functions/projects"
+  status = 200
+
+# Settings routes
+[[redirects]]
+  from = "/api/settings"
+  to = "/.netlify/functions/settings"
+  status = 200
+
+# Reports routes
+[[redirects]]
+  from = "/api/reports/*"
+  to = "/.netlify/functions/reports/:splat"
+  status = 200
+
+# Share routes
+[[redirects]]
+  from = "/api/share/*"
+  to = "/.netlify/functions/share/:splat"
+  status = 200
+
+# Admin routes
+[[redirects]]
+  from = "/api/admin/*"
+  to = "/.netlify/functions/admin/:splat"
+  status = 200
+
+# Messages routes
+[[redirects]]
+  from = "/api/messages/*"
+  to = "/.netlify/functions/messages/:splat"
+  status = 200
+
+# Health check
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200

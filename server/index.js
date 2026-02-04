@@ -15,6 +15,8 @@ const projectsRoutes = require('./routes/projects');
 const settingsRoutes = require('./routes/settings');
 const reportsRoutes = require('./routes/reports');
 const shareRoutes = require('./routes/share');
+const adminRoutes = require('./routes/admin');
+const messagesRoutes = require('./routes/messages');
 
 // Import utilities
 const { cleanExpiredTokens } = require('./utils/tokenUtils');
@@ -40,6 +42,8 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/share', shareRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

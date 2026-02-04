@@ -20,8 +20,8 @@ const API = {
 
     const response = await fetch(url, config);
 
-    // Handle 401 - trigger auth check
-    if (response.status === 401) {
+    // Handle 401 - skip refresh logic for auth endpoints (login/register)
+    if (response.status === 401 && !endpoint.startsWith('/auth/login') && !endpoint.startsWith('/auth/register')) {
       // Try to refresh token
       const refreshed = await this.refreshToken();
       if (refreshed) {
@@ -45,6 +45,13 @@ const API = {
   // ==================== AUTH ====================
   async register(username, email, password) {
     return this.request('/auth/register', {
+      method: 'POST',
+      body: { username, email, password }
+    });
+  },
+
+  async registerAdmin(username, email, password) {
+    return this.request('/auth/register-admin', {
       method: 'POST',
       body: { username, email, password }
     });
@@ -75,6 +82,20 @@ const API = {
     } catch {
       return false;
     }
+  },
+
+  async forgotPassword(email) {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: { email }
+    });
+  },
+
+  async resetPassword(token, password) {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: { token, password }
+    });
   },
 
   // ==================== SESSIONS ====================
@@ -205,6 +226,69 @@ const API = {
       method: 'POST',
       body: { email, date }
     });
+  },
+
+  // ==================== ADMIN ====================
+  async getEmployees() {
+    return this.request('/admin/employees');
+  },
+
+  async addEmployee(code) {
+    return this.request('/admin/employees/add', {
+      method: 'POST',
+      body: { code }
+    });
+  },
+
+  async removeEmployee(id) {
+    return this.request(`/admin/employees/${id}`, { method: 'DELETE' });
+  },
+
+  async getEmployeeSessions(id) {
+    return this.request(`/admin/employees/${id}/sessions`);
+  },
+
+  async getEmployeeActive(id) {
+    return this.request(`/admin/employees/${id}/active`);
+  },
+
+  async getEmployeeTodayReport(id) {
+    return this.request(`/admin/employees/${id}/reports/today`);
+  },
+
+  async getEmployeeWeeklyReport(id) {
+    return this.request(`/admin/employees/${id}/reports/weekly`);
+  },
+
+  async getEmployeeProjectBreakdown(id) {
+    return this.request(`/admin/employees/${id}/reports/projects`);
+  },
+
+  // ==================== MESSAGES ====================
+  async getMessages() {
+    return this.request('/messages');
+  },
+
+  async getMyAdmins() {
+    return this.request('/messages/admins');
+  },
+
+  async sendHourChangeRequest(data) {
+    return this.request('/messages', {
+      method: 'POST',
+      body: data
+    });
+  },
+
+  async respondToMessage(id, data) {
+    return this.request(`/messages/${id}/respond`, {
+      method: 'POST',
+      body: data
+    });
+  },
+
+  async getMessagesPendingCount() {
+    return this.request('/messages/pending-count');
   }
 };
 

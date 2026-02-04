@@ -29,6 +29,10 @@
                             <input type="password" id="login-password" required autocomplete="current-password">
                         </div>
 
+                        <div style="text-align: right; margin-top: -8px; margin-bottom: 12px;">
+                            <button type="button" class="link-btn" id="show-forgot-password" style="font-size: 14px; color: #8B7355;">Forgot Password?</button>
+                        </div>
+
                         <div class="auth-error" id="login-error"></div>
 
                         <button type="submit" class="btn auth-submit">Sign In</button>
@@ -61,6 +65,13 @@
                         <div class="form-field">
                             <label for="register-confirm">Confirm Password</label>
                             <input type="password" id="register-confirm" required minlength="8" autocomplete="new-password">
+                        </div>
+
+                        <div class="form-field checkbox-field">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="register-admin">
+                                <span class="checkbox-text">Register as Administrator</span>
+                            </label>
                         </div>
 
                         <div class="auth-error" id="register-error"></div>
@@ -119,6 +130,19 @@
                     <span class="nav-icon">&#9881;</span>
                     <span class="nav-title">Settings</span>
                     <span class="nav-desc">Configure preferences</span>
+                </button>
+
+                <button class="nav-card" id="messages-nav-card" data-screen="messages-screen">
+                    <span class="nav-icon">&#9993;</span>
+                    <span class="nav-title">Messages</span>
+                    <span class="nav-desc">Hour change requests</span>
+                    <span class="nav-badge" id="messages-badge" style="display: none;">0</span>
+                </button>
+
+                <button class="nav-card admin-nav-card" id="admin-nav-card" data-screen="admin-screen" style="display: none;">
+                    <span class="nav-icon">&#9733;</span>
+                    <span class="nav-title">Admin</span>
+                    <span class="nav-desc">Manage employees</span>
                 </button>
                 </nav>
             </div>
@@ -310,6 +334,14 @@
                 </div>
             </div>
 
+            <div class="settings-group">
+                <h2>Employee Code</h2>
+                <div class="employee-code-display">
+                    <p class="employee-code-info">Share this code with your administrator to link your account:</p>
+                    <div class="employee-code-value" id="employee-code">--------</div>
+                </div>
+            </div>
+
             <button class="btn save-btn" id="save-settings">Save Settings</button>
 
             <!-- Data Migration Section -->
@@ -317,6 +349,94 @@
                 <h2>Import Local Data</h2>
                 <p class="migration-notice">You have existing local data. Would you like to import it to your account?</p>
                 <button class="btn import-btn" id="import-data-btn">Import Local Data</button>
+            </div>
+        </div>
+
+        <!-- Messages Screen -->
+        <div id="messages-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Messages</h1>
+
+            <div id="new-request-section" style="display: none;">
+                <button class="btn request-change-btn" id="new-request-btn">New Hour Change Request</button>
+            </div>
+
+            <div id="messages-list"></div>
+        </div>
+
+        <!-- Admin Dashboard Screen -->
+        <div id="admin-screen" class="screen">
+            <button class="back-btn" data-screen="home-screen">&larr; Back</button>
+            <h1>Admin Dashboard</h1>
+
+            <div class="admin-add-employee">
+                <h2>Add Employee</h2>
+                <div class="add-employee-group">
+                    <input type="text" id="employee-code-input" placeholder="Enter employee code" maxlength="8">
+                    <button class="btn add-employee-btn" id="add-employee-btn">Add</button>
+                </div>
+                <div class="admin-error" id="admin-add-error"></div>
+            </div>
+
+            <div class="admin-employee-list">
+                <h2>Employees</h2>
+                <div id="employee-list"></div>
+            </div>
+        </div>
+
+        <!-- Employee Detail Screen -->
+        <div id="employee-detail-screen" class="screen">
+            <button class="back-btn" data-screen="admin-screen">&larr; Back</button>
+            <h1 id="employee-detail-name">Employee</h1>
+
+            <div class="employee-report-section">
+                <h2>Today</h2>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-label">Time Worked</span>
+                        <span class="stat-value" id="emp-today-hours">0:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value" id="emp-today-sessions">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Earned</span>
+                        <span class="stat-value" id="emp-today-earnings">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="employee-report-section">
+                <h2>This Week</h2>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <span class="stat-label">Time Worked</span>
+                        <span class="stat-value" id="emp-weekly-hours">0:00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value" id="emp-weekly-sessions">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Earned</span>
+                        <span class="stat-value" id="emp-weekly-earnings">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="employee-report-section">
+                <h2>Projects</h2>
+                <div id="emp-project-breakdown" class="project-chart"></div>
+            </div>
+
+            <div class="employee-report-section">
+                <h2>Session History</h2>
+                <ul id="emp-session-history" class="history"></ul>
+            </div>
+
+            <div class="employee-actions">
+                <button class="btn delete-btn" id="remove-employee-btn">Remove Employee</button>
             </div>
         </div>
     </div>
@@ -388,6 +508,116 @@
                 <button class="btn cancel-btn" id="cancel-share-btn">Cancel</button>
                 <button class="btn save-btn" id="send-share-btn">Send Email</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Hour Change Request Modal -->
+    <div class="modal-overlay" id="request-modal">
+        <div class="modal">
+            <h2>Request Hour Change</h2>
+
+            <div class="modal-field">
+                <label>Session</label>
+                <select id="request-session"></select>
+            </div>
+
+            <div class="modal-field">
+                <label>New Clock In</label>
+                <input type="datetime-local" id="request-clock-in">
+            </div>
+
+            <div class="modal-field">
+                <label>New Clock Out</label>
+                <input type="datetime-local" id="request-clock-out">
+            </div>
+
+            <div class="modal-field">
+                <label>Reason</label>
+                <textarea id="request-message" rows="3" placeholder="Why do you need this change?"></textarea>
+            </div>
+
+            <div class="modal-field" id="request-admin-field" style="display: none;">
+                <label>Send To</label>
+                <select id="request-admin"></select>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn cancel-btn" id="cancel-request-btn">Cancel</button>
+                <button class="btn save-btn" id="send-request-btn">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Respond Modal -->
+    <div class="modal-overlay" id="respond-modal">
+        <div class="modal">
+            <h2>Respond to Request</h2>
+
+            <div class="respond-detail" id="respond-detail"></div>
+
+            <div class="modal-field">
+                <label>Response (optional)</label>
+                <textarea id="respond-message" rows="3" placeholder="Add a note..."></textarea>
+            </div>
+
+            <div class="modal-buttons respond-buttons">
+                <button class="btn cancel-btn" id="cancel-respond-btn">Cancel</button>
+                <button class="btn delete-btn" id="deny-btn">Deny</button>
+                <button class="btn save-btn" id="approve-btn">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-password-modal">
+        <div class="modal">
+            <h2>Reset Password</h2>
+
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+                Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            <div class="modal-field">
+                <label for="forgot-email">Email Address</label>
+                <input type="email" id="forgot-email" placeholder="your@email.com" required>
+            </div>
+
+            <div class="auth-error" id="forgot-error"></div>
+            <div class="auth-success" id="forgot-success" style="display: none; color: #4CAF50; padding: 12px; background-color: #E8F5E9; border-radius: 4px; margin-bottom: 16px;"></div>
+
+            <div class="modal-buttons">
+                <button class="btn cancel-btn" id="cancel-forgot-btn">Cancel</button>
+                <button class="btn save-btn" id="send-reset-btn">Send Reset Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Password Screen -->
+    <div id="reset-password-screen" class="screen">
+        <div class="auth-content">
+            <h1>Reset Password</h1>
+            <p class="tagline">Create a new password</p>
+
+            <form id="reset-password-form" class="auth-form" style="max-width: 400px; margin: 0 auto;">
+                <div class="form-field">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" required minlength="8" autocomplete="new-password">
+                </div>
+
+                <div class="form-field">
+                    <label for="confirm-new-password">Confirm Password</label>
+                    <input type="password" id="confirm-new-password" required minlength="8" autocomplete="new-password">
+                </div>
+
+                <div class="auth-error" id="reset-error"></div>
+                <div class="auth-success" id="reset-success" style="display: none; color: #4CAF50; padding: 12px; background-color: #E8F5E9; border-radius: 4px; margin-bottom: 16px;"></div>
+
+                <button type="submit" class="btn auth-submit">Reset Password</button>
+
+                <p class="auth-switch">
+                    <button type="button" class="link-btn" id="back-to-login">Back to Sign In</button>
+                </p>
+            </form>
         </div>
     </div>
 

@@ -1,0 +1,17 @@
+# Local Netlify folder
+.netlify
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+
+# Database files
+server/clockin.db
+
+# Server (legacy Express backend)
+server/

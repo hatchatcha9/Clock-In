@@ -7,7 +7,7 @@ const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
 function generateAccessToken(user) {
   return jwt.sign(
-    { userId: user.id, username: user.username },
+    { userId: user.id, username: user.username, isAdmin: !!user.is_admin },
     process.env.JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRES }
   );

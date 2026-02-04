@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDb } = require('../config/database');
+const { getDb, generateEmployeeCode } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -15,18 +15,42 @@ router.get('/', (req, res) => {
 
     // Create default settings if not exist
     if (!settings) {
+      let employeeCode;
+      let attempts = 0;
+      while (attempts < 10) {
+        employeeCode = generateEmployeeCode();
+        const existing = db.prepare('SELECT user_id FROM user_settings WHERE employee_code = ?').get(employeeCode);
+        if (!existing) break;
+        attempts++;
+      }
+
       db.prepare(`
-        INSERT INTO user_settings (user_id, hourly_rate, text_size)
-        VALUES (?, 0, 'medium')
-      `).run(req.user.userId);
+        INSERT INTO user_settings (user_id, hourly_rate, text_size, employee_code)
+        VALUES (?, 0, 'medium', ?)
+      `).run(req.user.userId, employeeCode);
 
       settings = db.prepare('SELECT * FROM user_settings WHERE user_id = ?').get(req.user.userId);
+    }
+
+    // Auto-generate employee code if missing (for pre-existing users)
+    if (!settings.employee_code) {
+      let employeeCode;
+      let attempts = 0;
+      while (attempts < 10) {
+        employeeCode = generateEmployeeCode();
+        const existing = db.prepare('SELECT user_id FROM user_settings WHERE employee_code = ?').get(employeeCode);
+        if (!existing) break;
+        attempts++;
+      }
+      db.prepare('UPDATE user_settings SET employee_code = ? WHERE user_id = ?').run(employeeCode, req.user.userId);
+      settings.employee_code = employeeCode;
     }
 
     res.json({
       settings: {
         hourlyRate: settings.hourly_rate,
-        textSize: settings.text_size
+        textSize: settings.text_size,
+        employeeCode: settings.employee_code
       }
     });
   } catch (error) {
@@ -95,7 +119,8 @@ router.put('/', (req, res) => {
       message: 'Settings updated',
       settings: {
         hourlyRate: settings.hourly_rate,
-        textSize: settings.text_size
+        textSize: settings.text_size,
+        employeeCode: settings.employee_code
       }
     });
   } catch (error) {

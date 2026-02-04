@@ -1,6 +1,16 @@
 // ==================== AUTH STATE ====================
 let isAuthenticated = false;
 let currentUser = null;
+let isAdmin = false;
+
+// ==================== UTILITY FUNCTIONS ====================
+// Escape HTML to prevent XSS attacks
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    const div = document.createElement('div');
+    div.textContent = unsafe;
+    return div.innerHTML;
+}
 
 // ==================== SCREEN NAVIGATION ====================
 function navigateTo(screenId) {
@@ -21,6 +31,10 @@ function navigateTo(screenId) {
         checkLocalDataForMigration();
     } else if (screenId === 'clockin-screen') {
         populateProjectSelectors();
+    } else if (screenId === 'admin-screen') {
+        renderAdminDashboard();
+    } else if (screenId === 'messages-screen') {
+        renderMessages();
     }
 }
 
@@ -39,11 +53,14 @@ async function checkAuth() {
         const data = await API.getMe();
         currentUser = data.user;
         isAuthenticated = true;
+        isAdmin = !!data.user.isAdmin;
         await initializeApp();
+        updateAdminUI();
         navigateTo('home-screen');
     } catch (error) {
         isAuthenticated = false;
         currentUser = null;
+        isAdmin = false;
         navigateTo('auth-screen');
     }
 }
@@ -69,8 +86,10 @@ async function handleLogin(e) {
         const data = await API.login(username, password);
         currentUser = data.user;
         isAuthenticated = true;
+        isAdmin = !!data.user.isAdmin;
         document.getElementById('login-form').reset();
         await initializeApp();
+        updateAdminUI();
         navigateTo('home-screen');
     } catch (error) {
         errorEl.textContent = error.message || 'Login failed';
@@ -110,11 +129,16 @@ async function handleRegister(e) {
     errorEl.textContent = '';
 
     try {
-        const data = await API.register(username, email, password);
+        const registerAsAdmin = document.getElementById('register-admin').checked;
+        const data = registerAsAdmin
+            ? await API.registerAdmin(username, email, password)
+            : await API.register(username, email, password);
         currentUser = data.user;
         isAuthenticated = true;
+        isAdmin = !!data.user.isAdmin;
         document.getElementById('register-form').reset();
         await initializeApp();
+        updateAdminUI();
         navigateTo('home-screen');
     } catch (error) {
         errorEl.textContent = error.message || 'Registration failed';
@@ -163,6 +187,18 @@ function resetAppState() {
     // Clear projects
     projects = [];
     settings = { hourlyRate: 0, textSize: 'medium' };
+
+    // Reset admin state
+    isAdmin = false;
+    updateAdminUI();
+
+    // Clear message badge interval
+    if (messageBadgeInterval) {
+        clearInterval(messageBadgeInterval);
+        messageBadgeInterval = null;
+    }
+    const badge = document.getElementById('messages-badge');
+    if (badge) badge.style.display = 'none';
 }
 
 // Auth form switching
@@ -190,6 +226,140 @@ window.addEventListener('auth:required', () => {
     navigateTo('auth-screen');
 });
 
+// ==================== FORGOT PASSWORD ====================
+function openForgotPasswordModal() {
+    document.getElementById('forgot-email').value = '';
+    document.getElementById('forgot-error').textContent = '';
+    document.getElementById('forgot-success').style.display = 'none';
+    document.getElementById('forgot-password-modal').classList.add('active');
+}
+
+function closeForgotPasswordModal() {
+    document.getElementById('forgot-password-modal').classList.remove('active');
+}
+
+async function handleForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    const errorEl = document.getElementById('forgot-error');
+    const successEl = document.getElementById('forgot-success');
+    const sendBtn = document.getElementById('send-reset-btn');
+
+    if (!email) {
+        errorEl.textContent = 'Please enter your email address';
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        errorEl.textContent = 'Please enter a valid email address';
+        return;
+    }
+
+    sendBtn.classList.add('loading');
+    sendBtn.disabled = true;
+    errorEl.textContent = '';
+    successEl.style.display = 'none';
+
+    try {
+        const data = await API.forgotPassword(email);
+        successEl.textContent = data.message;
+        successEl.style.display = 'block';
+        document.getElementById('forgot-email').value = '';
+
+        // Close modal after 3 seconds
+        setTimeout(() => {
+            closeForgotPasswordModal();
+        }, 3000);
+    } catch (error) {
+        errorEl.textContent = error.message || 'Failed to send reset email';
+    } finally {
+        sendBtn.classList.remove('loading');
+        sendBtn.disabled = false;
+    }
+}
+
+// Check if we're on the reset password page
+function checkResetPasswordToken() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+        // Show reset password screen
+        navigateTo('reset-password-screen');
+    }
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const errorEl = document.getElementById('reset-error');
+    const successEl = document.getElementById('reset-success');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    const password = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-new-password').value;
+
+    if (!password || !confirmPassword) {
+        errorEl.textContent = 'Please fill in all fields';
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match';
+        return;
+    }
+
+    if (password.length < 8) {
+        errorEl.textContent = 'Password must be at least 8 characters';
+        return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        errorEl.textContent = 'Invalid reset link';
+        return;
+    }
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    errorEl.textContent = '';
+    successEl.style.display = 'none';
+
+    try {
+        const data = await API.resetPassword(token, password);
+        successEl.textContent = data.message;
+        successEl.style.display = 'block';
+        document.getElementById('reset-password-form').reset();
+
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
+    } catch (error) {
+        errorEl.textContent = error.message || 'Failed to reset password';
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+    }
+}
+
+// Event listeners for forgot password
+document.getElementById('show-forgot-password').addEventListener('click', openForgotPasswordModal);
+document.getElementById('cancel-forgot-btn').addEventListener('click', closeForgotPasswordModal);
+document.getElementById('send-reset-btn').addEventListener('click', handleForgotPassword);
+document.getElementById('forgot-password-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'forgot-password-modal') {
+        closeForgotPasswordModal();
+    }
+});
+
+// Event listeners for reset password
+document.getElementById('reset-password-form').addEventListener('submit', handleResetPassword);
+document.getElementById('back-to-login').addEventListener('click', () => {
+    window.location.href = '/';
+});
+
 // ==================== SETTINGS ====================
 let settings = { hourlyRate: 0, textSize: 'medium' };
 let projects = [];
@@ -213,6 +383,12 @@ async function loadSettings() {
     });
 
     applyTextSize(settings.textSize);
+
+    // Display employee code
+    const codeEl = document.getElementById('employee-code');
+    if (codeEl && settings.employeeCode) {
+        codeEl.textContent = settings.employeeCode;
+    }
 }
 
 function applyTextSize(size) {
@@ -300,7 +476,7 @@ function renderProjectsList() {
         const div = document.createElement('div');
         div.className = 'project-item';
         div.innerHTML = `
-            <span class="project-name">${project.name}</span>
+            <span class="project-name">${escapeHtml(project.name)}</span>
             <button class="delete-project-btn">&times;</button>
         `;
         div.querySelector('.delete-project-btn').addEventListener('click', () => deleteProject(project.id));
@@ -581,17 +757,29 @@ function renderHistory() {
         if (session.project_name || session.notes) {
             infoHtml = `<div class="session-info">
                 <span class="time-range">${dateStr} &middot; ${formatTime(clockIn)} - ${formatTime(clockOut)}</span>
-                ${session.project_name ? `<span class="session-project">${session.project_name}</span>` : ''}
-                ${session.notes ? `<span class="session-notes">${session.notes}</span>` : ''}
+                ${session.project_name ? `<span class="session-project">${escapeHtml(session.project_name)}</span>` : ''}
+                ${session.notes ? `<span class="session-notes">${escapeHtml(session.notes)}</span>` : ''}
             </div>`;
         }
 
+        const requestBtn = !isAdmin ? `<button class="btn request-change-history-btn" data-session-id="${session.id}" title="Request hour change">&hellip;</button>` : '';
+
         li.innerHTML = `
             ${infoHtml}
-            <span class="duration">${formatHoursMinutes(session.duration)}</span>
+            <div class="history-item-actions">
+                ${requestBtn}
+                <span class="duration">${formatHoursMinutes(session.duration)}</span>
+            </div>
         `;
 
-        li.addEventListener('click', () => openEditModal(session));
+        li.addEventListener('click', (e) => {
+            if (e.target.classList.contains('request-change-history-btn')) {
+                e.stopPropagation();
+                openRequestModal(session.id);
+                return;
+            }
+            openEditModal(session);
+        });
         historyList.appendChild(li);
     });
 }
@@ -813,7 +1001,7 @@ async function renderProjectChart() {
             const div = document.createElement('div');
             div.className = 'project-bar';
             div.innerHTML = `
-                <span class="project-bar-label">${project.name}</span>
+                <span class="project-bar-label">${escapeHtml(project.name)}</span>
                 <div class="project-bar-track">
                     <div class="project-bar-fill" style="width: ${percentage}%"></div>
                 </div>
@@ -1049,7 +1237,532 @@ async function initializeApp() {
         document.getElementById('home-timer').textContent = '00:00:00';
         document.getElementById('home-timer-status').textContent = 'Not clocked in';
     }
+
+    // Update message badge
+    updateMessageBadge();
+    if (messageBadgeInterval) clearInterval(messageBadgeInterval);
+    messageBadgeInterval = setInterval(updateMessageBadge, 2 * 60 * 1000);
 }
 
-// Start by checking authentication
-checkAuth();
+// ==================== ADMIN FUNCTIONS ====================
+function updateAdminUI() {
+    const adminCard = document.getElementById('admin-nav-card');
+    if (adminCard) {
+        adminCard.style.display = isAdmin ? '' : 'none';
+    }
+}
+
+let currentEmployeeId = null;
+
+async function renderAdminDashboard() {
+    const list = document.getElementById('employee-list');
+    const errorEl = document.getElementById('admin-add-error');
+    errorEl.textContent = '';
+
+    try {
+        const data = await API.getEmployees();
+        renderEmployeeList(data.employees);
+    } catch (error) {
+        list.innerHTML = '<p class="empty-history">Failed to load employees</p>';
+    }
+}
+
+function renderEmployeeList(employees) {
+    const list = document.getElementById('employee-list');
+    list.innerHTML = '';
+
+    if (employees.length === 0) {
+        list.innerHTML = '<p class="empty-history">No employees linked yet. Add one using their employee code.</p>';
+        return;
+    }
+
+    employees.forEach(emp => {
+        const card = document.createElement('div');
+        card.className = 'employee-card';
+
+        let statusHtml;
+        if (emp.activeSession) {
+            if (emp.activeSession.isOnBreak) {
+                statusHtml = '<span class="emp-status-badge on-break">On Break</span>';
+            } else {
+                statusHtml = '<span class="emp-status-badge clocked-in">Clocked In</span>';
+            }
+            if (emp.activeSession.projectName) {
+                statusHtml += `<span class="emp-project">${escapeHtml(emp.activeSession.projectName)}</span>`;
+            }
+        } else {
+            statusHtml = '<span class="emp-status-badge clocked-out">Not Working</span>';
+        }
+
+        card.innerHTML = `
+            <div class="employee-card-info">
+                <span class="employee-card-name">${escapeHtml(emp.username)}</span>
+                <span class="employee-card-email">${escapeHtml(emp.email)}</span>
+            </div>
+            <div class="employee-card-status">${statusHtml}</div>
+        `;
+
+        card.addEventListener('click', () => openEmployeeDetail(emp.id, emp.username));
+        list.appendChild(card);
+    });
+}
+
+async function addEmployee() {
+    const input = document.getElementById('employee-code-input');
+    const errorEl = document.getElementById('admin-add-error');
+    const code = input.value.trim();
+
+    if (!code) {
+        errorEl.textContent = 'Please enter an employee code';
+        return;
+    }
+
+    try {
+        errorEl.textContent = '';
+        await API.addEmployee(code);
+        input.value = '';
+        await renderAdminDashboard();
+    } catch (error) {
+        errorEl.textContent = error.message || 'Failed to add employee';
+    }
+}
+
+async function removeEmployee() {
+    if (!currentEmployeeId) return;
+    if (!confirm('Are you sure you want to remove this employee?')) return;
+
+    try {
+        await API.removeEmployee(currentEmployeeId);
+        currentEmployeeId = null;
+        navigateTo('admin-screen');
+    } catch (error) {
+        alert('Failed to remove employee: ' + error.message);
+    }
+}
+
+async function openEmployeeDetail(employeeId, username) {
+    currentEmployeeId = employeeId;
+    document.getElementById('employee-detail-name').textContent = username;
+
+    // Navigate first, then load data
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('employee-detail-screen').classList.add('active');
+
+    // Reset displays
+    document.getElementById('emp-today-hours').textContent = '0:00';
+    document.getElementById('emp-today-sessions').textContent = '0';
+    document.getElementById('emp-today-earnings').textContent = '$0.00';
+    document.getElementById('emp-weekly-hours').textContent = '0:00';
+    document.getElementById('emp-weekly-sessions').textContent = '0';
+    document.getElementById('emp-weekly-earnings').textContent = '$0.00';
+    document.getElementById('emp-project-breakdown').innerHTML = '';
+    document.getElementById('emp-session-history').innerHTML = '';
+
+    // Load all data in parallel
+    try {
+        const [todayData, weeklyData, projectData, sessionData] = await Promise.all([
+            API.getEmployeeTodayReport(employeeId),
+            API.getEmployeeWeeklyReport(employeeId),
+            API.getEmployeeProjectBreakdown(employeeId),
+            API.getEmployeeSessions(employeeId)
+        ]);
+
+        // Today report
+        document.getElementById('emp-today-hours').textContent = formatHoursMinutes(todayData.totalMs);
+        document.getElementById('emp-today-sessions').textContent = todayData.sessionCount;
+        document.getElementById('emp-today-earnings').textContent = formatMoney(todayData.earnings);
+
+        // Weekly report
+        document.getElementById('emp-weekly-hours').textContent = formatHoursMinutes(weeklyData.totalMs);
+        document.getElementById('emp-weekly-sessions').textContent = weeklyData.sessionCount;
+        document.getElementById('emp-weekly-earnings').textContent = formatMoney(weeklyData.earnings);
+
+        // Project breakdown
+        const projectChart = document.getElementById('emp-project-breakdown');
+        const allProjects = [...projectData.projects];
+        if (projectData.noProject.total_ms > 0) {
+            allProjects.push({ name: 'No Project', total_ms: projectData.noProject.total_ms });
+        }
+        allProjects.sort((a, b) => b.total_ms - a.total_ms);
+        const totalMs = allProjects.reduce((sum, p) => sum + p.total_ms, 0);
+
+        if (totalMs === 0) {
+            projectChart.innerHTML = '<p class="empty-history">No project data</p>';
+        } else {
+            allProjects.slice(0, 5).forEach(project => {
+                const percentage = (project.total_ms / totalMs) * 100;
+                const div = document.createElement('div');
+                div.className = 'project-bar';
+                div.innerHTML = `
+                    <span class="project-bar-label">${escapeHtml(project.name)}</span>
+                    <div class="project-bar-track">
+                        <div class="project-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="project-bar-value">${formatHoursMinutes(project.total_ms)}</span>
+                `;
+                projectChart.appendChild(div);
+            });
+        }
+
+        // Session history
+        const historyEl = document.getElementById('emp-session-history');
+        if (sessionData.sessions.length === 0) {
+            historyEl.innerHTML = '<li class="empty-history">No sessions recorded yet</li>';
+        } else {
+            sessionData.sessions.slice(0, 30).forEach(session => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+
+                const clockIn = new Date(session.clock_in);
+                const clockOut = new Date(session.clock_out);
+                const dateStr = clockIn.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                let infoHtml = `<span class="time-range">${dateStr} &middot; ${formatTime(clockIn)} - ${formatTime(clockOut)}</span>`;
+                if (session.project_name || session.notes) {
+                    infoHtml = `<div class="session-info">
+                        <span class="time-range">${dateStr} &middot; ${formatTime(clockIn)} - ${formatTime(clockOut)}</span>
+                        ${session.project_name ? `<span class="session-project">${escapeHtml(session.project_name)}</span>` : ''}
+                        ${session.notes ? `<span class="session-notes">${escapeHtml(session.notes)}</span>` : ''}
+                    </div>`;
+                }
+
+                li.innerHTML = `
+                    ${infoHtml}
+                    <span class="duration">${formatHoursMinutes(session.duration)}</span>
+                `;
+                historyEl.appendChild(li);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load employee detail:', error);
+    }
+}
+
+// Admin event listeners
+document.getElementById('add-employee-btn').addEventListener('click', addEmployee);
+document.getElementById('employee-code-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addEmployee();
+});
+document.getElementById('remove-employee-btn').addEventListener('click', removeEmployee);
+
+// ==================== MESSAGES / HOUR CHANGE REQUESTS ====================
+let messagesCache = [];
+let myAdmins = [];
+let respondingToMessage = null;
+let messageBadgeInterval = null;
+
+async function renderMessages() {
+    const list = document.getElementById('messages-list');
+    const newRequestSection = document.getElementById('new-request-section');
+
+    // Show new request button for non-admins only
+    newRequestSection.style.display = isAdmin ? 'none' : 'block';
+
+    list.innerHTML = '<p class="empty-history">Loading...</p>';
+
+    try {
+        const data = await API.getMessages();
+        messagesCache = data.messages;
+
+        if (messagesCache.length === 0) {
+            list.innerHTML = '<p class="empty-history">No messages yet</p>';
+            return;
+        }
+
+        // Group: top-level messages with their responses
+        const topLevel = messagesCache.filter(m => !m.parent_id);
+        const responses = messagesCache.filter(m => m.parent_id);
+
+        list.innerHTML = '';
+
+        topLevel.forEach(msg => {
+            const card = document.createElement('div');
+            card.className = `message-card message-${msg.status}`;
+
+            const date = new Date(msg.created_at);
+            const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let sessionInfo = '';
+            if (msg.session_clock_in && msg.session_clock_out) {
+                const sessIn = new Date(msg.session_clock_in);
+                const sessOut = new Date(msg.session_clock_out);
+                sessionInfo = `<div class="message-session">
+                    <span class="message-session-label">Original Session:</span>
+                    ${sessIn.toLocaleDateString([], { month: 'short', day: 'numeric' })} &middot;
+                    ${formatTime(sessIn)} - ${formatTime(sessOut)}
+                    ${msg.project_name ? ` &middot; ${escapeHtml(msg.project_name)}` : ''}
+                </div>`;
+            }
+
+            let requestedTimes = '';
+            if (msg.requested_clock_in && msg.requested_clock_out) {
+                const reqIn = new Date(msg.requested_clock_in);
+                const reqOut = new Date(msg.requested_clock_out);
+                requestedTimes = `<div class="message-requested">
+                    <span class="message-session-label">Requested:</span>
+                    ${reqIn.toLocaleDateString([], { month: 'short', day: 'numeric' })} &middot;
+                    ${formatTime(reqIn)} - ${formatTime(reqOut)}
+                </div>`;
+            }
+
+            const statusBadge = `<span class="message-status-badge status-${msg.status}">${msg.status}</span>`;
+
+            const isMySentRequest = msg.sender_id === (currentUser && currentUser.id);
+            const direction = isMySentRequest
+                ? `To: ${escapeHtml(msg.recipient_name)}`
+                : `From: ${escapeHtml(msg.sender_name)}`;
+
+            let respondBtn = '';
+            if (isAdmin && msg.recipient_id === currentUser.id && msg.status === 'pending') {
+                respondBtn = `<button class="btn respond-btn" data-msg-id="${msg.id}">Respond</button>`;
+            }
+
+            // Find child responses
+            const childResponses = responses.filter(r => r.parent_id === msg.id);
+            let repliesHtml = '';
+            if (childResponses.length > 0) {
+                repliesHtml = '<div class="message-replies">';
+                childResponses.forEach(reply => {
+                    const replyDate = new Date(reply.created_at);
+                    repliesHtml += `<div class="message-reply">
+                        <div class="message-reply-header">
+                            <span class="message-reply-from">${escapeHtml(reply.sender_name)}</span>
+                            <span class="message-reply-date">${replyDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${replyDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        ${reply.message ? `<div class="message-reply-text">${escapeHtml(reply.message)}</div>` : ''}
+                    </div>`;
+                });
+                repliesHtml += '</div>';
+            }
+
+            card.innerHTML = `
+                <div class="message-header">
+                    <span class="message-direction">${direction}</span>
+                    <span class="message-date">${dateStr} ${timeStr}</span>
+                </div>
+                ${statusBadge}
+                ${sessionInfo}
+                ${requestedTimes}
+                ${msg.message ? `<div class="message-text">${escapeHtml(msg.message)}</div>` : ''}
+                ${repliesHtml}
+                ${respondBtn}
+            `;
+
+            // Attach respond button handler
+            list.appendChild(card);
+            const btn = card.querySelector('.respond-btn');
+            if (btn) {
+                btn.addEventListener('click', () => openRespondModal(msg));
+            }
+        });
+    } catch (error) {
+        console.error('Failed to load messages:', error);
+        list.innerHTML = '<p class="empty-history">Failed to load messages</p>';
+    }
+}
+
+async function openRequestModal(preselectedSessionId) {
+    const sessionSelect = document.getElementById('request-session');
+    const adminSelect = document.getElementById('request-admin');
+    const adminField = document.getElementById('request-admin-field');
+
+    // Reset fields
+    document.getElementById('request-clock-in').value = '';
+    document.getElementById('request-clock-out').value = '';
+    document.getElementById('request-message').value = '';
+
+    // Load sessions
+    try {
+        const sessData = await API.getSessions({ limit: 50 });
+        sessionSelect.innerHTML = '<option value="">Select a session</option>';
+        sessData.sessions.forEach(s => {
+            const d = new Date(s.clock_in);
+            const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            const inTime = formatTime(new Date(s.clock_in));
+            const outTime = formatTime(new Date(s.clock_out));
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${dateStr} - ${inTime} to ${outTime}${s.project_name ? ' (' + s.project_name + ')' : ''}`;
+            opt.dataset.clockIn = s.clock_in;
+            opt.dataset.clockOut = s.clock_out;
+            sessionSelect.appendChild(opt);
+        });
+
+        if (preselectedSessionId) {
+            sessionSelect.value = preselectedSessionId;
+            prefillRequestTimes();
+        }
+    } catch (error) {
+        console.error('Failed to load sessions for request:', error);
+    }
+
+    // Load admins
+    try {
+        const adminData = await API.getMyAdmins();
+        myAdmins = adminData.admins;
+        if (myAdmins.length > 1) {
+            adminField.style.display = 'block';
+            adminSelect.innerHTML = '';
+            myAdmins.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = a.username;
+                adminSelect.appendChild(opt);
+            });
+        } else {
+            adminField.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Failed to load admins:', error);
+    }
+
+    document.getElementById('request-modal').classList.add('active');
+}
+
+function prefillRequestTimes() {
+    const sessionSelect = document.getElementById('request-session');
+    const selected = sessionSelect.options[sessionSelect.selectedIndex];
+    if (selected && selected.dataset.clockIn) {
+        document.getElementById('request-clock-in').value = formatDateTimeLocal(new Date(selected.dataset.clockIn));
+        document.getElementById('request-clock-out').value = formatDateTimeLocal(new Date(selected.dataset.clockOut));
+    }
+}
+
+async function sendRequest() {
+    const sessionId = document.getElementById('request-session').value;
+    const requestedClockIn = document.getElementById('request-clock-in').value;
+    const requestedClockOut = document.getElementById('request-clock-out').value;
+    const message = document.getElementById('request-message').value.trim();
+    const adminSelect = document.getElementById('request-admin');
+    const recipientId = myAdmins.length > 1 ? adminSelect.value : (myAdmins.length === 1 ? myAdmins[0].id : null);
+
+    if (!sessionId) {
+        alert('Please select a session');
+        return;
+    }
+    if (!requestedClockIn || !requestedClockOut) {
+        alert('Please enter the requested clock in and clock out times');
+        return;
+    }
+    if (new Date(requestedClockOut) <= new Date(requestedClockIn)) {
+        alert('Clock out must be after clock in');
+        return;
+    }
+
+    try {
+        await API.sendHourChangeRequest({
+            sessionId: parseInt(sessionId),
+            requestedClockIn,
+            requestedClockOut,
+            message: message || null,
+            recipientId: recipientId ? parseInt(recipientId) : null
+        });
+
+        document.getElementById('request-modal').classList.remove('active');
+        renderMessages();
+        updateMessageBadge();
+    } catch (error) {
+        alert('Failed to send request: ' + error.message);
+    }
+}
+
+function openRespondModal(msg) {
+    respondingToMessage = msg;
+    const detail = document.getElementById('respond-detail');
+
+    let sessionInfo = '';
+    if (msg.session_clock_in && msg.session_clock_out) {
+        const sessIn = new Date(msg.session_clock_in);
+        const sessOut = new Date(msg.session_clock_out);
+        sessionInfo = `<div class="respond-info"><strong>Original:</strong> ${sessIn.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${formatTime(sessIn)} - ${formatTime(sessOut)}</div>`;
+    }
+
+    let requestedInfo = '';
+    if (msg.requested_clock_in && msg.requested_clock_out) {
+        const reqIn = new Date(msg.requested_clock_in);
+        const reqOut = new Date(msg.requested_clock_out);
+        requestedInfo = `<div class="respond-info"><strong>Requested:</strong> ${reqIn.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${formatTime(reqIn)} - ${formatTime(reqOut)}</div>`;
+    }
+
+    detail.innerHTML = `
+        <div class="respond-info"><strong>From:</strong> ${escapeHtml(msg.sender_name)}</div>
+        ${sessionInfo}
+        ${requestedInfo}
+        ${msg.message ? `<div class="respond-info"><strong>Reason:</strong> ${escapeHtml(msg.message)}</div>` : ''}
+    `;
+
+    document.getElementById('respond-message').value = '';
+    document.getElementById('respond-modal').classList.add('active');
+}
+
+async function respondToRequest(status) {
+    if (!respondingToMessage) return;
+
+    const message = document.getElementById('respond-message').value.trim();
+
+    try {
+        await API.respondToMessage(respondingToMessage.id, {
+            status,
+            message: message || null
+        });
+
+        document.getElementById('respond-modal').classList.remove('active');
+        respondingToMessage = null;
+        renderMessages();
+        updateMessageBadge();
+    } catch (error) {
+        alert('Failed to respond: ' + error.message);
+    }
+}
+
+async function updateMessageBadge() {
+    try {
+        const data = await API.getMessagesPendingCount();
+        const badge = document.getElementById('messages-badge');
+        if (data.count > 0) {
+            badge.textContent = data.count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (error) {
+        // Silently fail for badge updates
+    }
+}
+
+// Event listeners for messages
+document.getElementById('new-request-btn').addEventListener('click', () => openRequestModal());
+document.getElementById('request-session').addEventListener('change', prefillRequestTimes);
+document.getElementById('send-request-btn').addEventListener('click', sendRequest);
+document.getElementById('cancel-request-btn').addEventListener('click', () => {
+    document.getElementById('request-modal').classList.remove('active');
+});
+document.getElementById('approve-btn').addEventListener('click', () => respondToRequest('approved'));
+document.getElementById('deny-btn').addEventListener('click', () => respondToRequest('denied'));
+document.getElementById('cancel-respond-btn').addEventListener('click', () => {
+    document.getElementById('respond-modal').classList.remove('active');
+    respondingToMessage = null;
+});
+
+// Close modals on overlay click
+document.getElementById('request-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'request-modal') {
+        document.getElementById('request-modal').classList.remove('active');
+    }
+});
+document.getElementById('respond-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'respond-modal') {
+        document.getElementById('respond-modal').classList.remove('active');
+        respondingToMessage = null;
+    }
+});
+
+// Check for reset password token first
+checkResetPasswordToken();
+
+// Start by checking authentication (if not on reset password page)
+const urlParams = new URLSearchParams(window.location.search);
+if (!urlParams.get('token')) {
+    checkAuth();
+}

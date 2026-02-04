@@ -29,7 +29,7 @@ function authenticate(req, res, next) {
   }
 
   // Get user from database
-  const userStmt = db.prepare('SELECT id, username, email FROM users WHERE id = ?');
+  const userStmt = db.prepare('SELECT id, username, email, is_admin FROM users WHERE id = ?');
   const user = userStmt.get(storedToken.user_id);
 
   if (!user) {
@@ -47,8 +47,15 @@ function authenticate(req, res, next) {
     maxAge: 15 * 60 * 1000
   });
 
-  req.user = { userId: user.id, username: user.username };
+  req.user = { userId: user.id, username: user.username, isAdmin: !!user.is_admin };
   next();
 }
 
-module.exports = { authenticate };
+function requireAdmin(req, res, next) {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
+
+module.exports = { authenticate, requireAdmin };
