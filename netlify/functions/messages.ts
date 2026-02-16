@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 import { db } from '../../db';
-import { adminEmployees, users, messages, sessions } from '../../db/schema';
+import { adminEmployees, users, messages, sessions, projects } from '../../db/schema';
 import { eq, and, or, desc, inArray, sql } from 'drizzle-orm';
 import { authenticate } from './utils/auth';
 import { jsonResponse } from './utils/response';
@@ -65,6 +65,9 @@ async function handleGetMessages(event: HandlerEvent) {
           recipient_id: messages.recipientId,
           recipient_name: sql<string>`recipient_user.username`.as('recipient_name'),
           session_id: messages.sessionId,
+          session_clock_in: sessions.clockIn,
+          session_clock_out: sessions.clockOut,
+          project_name: projects.name,
           requested_clock_in: messages.requestedClockIn,
           requested_clock_out: messages.requestedClockOut,
           message: messages.message,
@@ -76,6 +79,8 @@ async function handleGetMessages(event: HandlerEvent) {
         .from(messages)
         .innerJoin(users, eq(messages.senderId, users.id))
         .leftJoin(sql`users AS recipient_user`, sql`messages.recipient_id = recipient_user.id`)
+        .leftJoin(sessions, eq(messages.sessionId, sessions.id))
+        .leftJoin(projects, eq(sessions.projectId, projects.id))
         .where(inArray(messages.senderId, employeeIdList))
         .orderBy(desc(messages.createdAt))
         .limit(100);
@@ -90,6 +95,9 @@ async function handleGetMessages(event: HandlerEvent) {
         recipient_id: messages.recipientId,
         recipient_name: sql<string>`recipient_user.username`.as('recipient_name'),
         session_id: messages.sessionId,
+        session_clock_in: sessions.clockIn,
+        session_clock_out: sessions.clockOut,
+        project_name: projects.name,
         requested_clock_in: messages.requestedClockIn,
         requested_clock_out: messages.requestedClockOut,
         message: messages.message,
@@ -101,6 +109,8 @@ async function handleGetMessages(event: HandlerEvent) {
       .from(messages)
       .innerJoin(users, eq(messages.senderId, users.id))
       .leftJoin(sql`users AS recipient_user`, sql`messages.recipient_id = recipient_user.id`)
+      .leftJoin(sessions, eq(messages.sessionId, sessions.id))
+      .leftJoin(projects, eq(sessions.projectId, projects.id))
       .where(eq(messages.senderId, auth.user!.userId))
       .orderBy(desc(messages.createdAt))
       .limit(100);

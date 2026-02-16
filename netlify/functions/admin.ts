@@ -1,7 +1,7 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 import { db } from '../../db';
 import { adminEmployees, users, userSettings, sessions, activeSessions, projects, weeklyReports } from '../../db/schema';
-import { eq, and, desc, gte, lte, lt, sql } from 'drizzle-orm';
+import { eq, and, desc, gte, lte, lt, sql, isNull } from 'drizzle-orm';
 import { authenticate } from './utils/auth';
 import { jsonResponse } from './utils/response';
 import { getWeekStart, getWeekEnd } from './utils/dateHelpers';
@@ -194,12 +194,12 @@ async function handleGetEmployeeSessions(event: HandlerEvent, employeeId: number
   const sessionRows = await db
     .select({
       id: sessions.id,
-      clockIn: sessions.clockIn,
-      clockOut: sessions.clockOut,
+      clock_in: sessions.clockIn,
+      clock_out: sessions.clockOut,
       duration: sessions.duration,
-      projectName: projects.name,
+      project_name: projects.name,
       notes: sessions.notes,
-      createdAt: sessions.createdAt,
+      created_at: sessions.createdAt,
     })
     .from(sessions)
     .leftJoin(projects, eq(sessions.projectId, projects.id))
@@ -411,25 +411,58 @@ async function handleGetEmployeeProjectBreakdown(event: HandlerEvent, employeeId
   const weekStart = getWeekStart(new Date());
   const weekEnd = getWeekEnd(new Date());
 
-  const projectBreakdown = await db
+  // Get projects with time for this employee
+  const projectRows = await db
     .select({
-      name: sql<string>`COALESCE(${projects.name}, 'No Project')`.as('name'),
-      totalMs: sql<number>`SUM(${sessions.duration})`.as('total_ms'),
-      sessionCount: sql<number>`COUNT(${sessions.id})`.as('session_count'),
+      id: projects.id,
+      name: projects.name,
+      total_ms: sql<number>`COALESCE(SUM(${sessions.duration}), 0)`.as('total_ms'),
+      session_count: sql<number>`COUNT(${sessions.id})`.as('session_count'),
     })
-    .from(sessions)
-    .leftJoin(projects, eq(sessions.projectId, projects.id))
-    .where(
+    .from(projects)
+    .leftJoin(
+      sessions,
       and(
+        eq(projects.id, sessions.projectId),
         eq(sessions.userId, employeeId),
         gte(sessions.clockIn, weekStart.toISOString()),
         lte(sessions.clockIn, weekEnd.toISOString())
       )
     )
-    .groupBy(sql`COALESCE(${projects.name}, 'No Project')`)
+    .where(eq(projects.userId, employeeId))
+    .groupBy(projects.id, projects.name)
     .orderBy(sql`total_ms DESC`);
 
-  return jsonResponse(200, { projectBreakdown }, auth.cookies);
+  // Get no-project sessions for this employee
+  const noProjectRows = await db
+    .select({
+      total_ms: sql<number>`COALESCE(SUM(${sessions.duration}), 0)`.as('total_ms'),
+      session_count: sql<number>`COUNT(${sessions.id})`.as('session_count'),
+    })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.userId, employeeId),
+        isNull(sessions.projectId),
+        gte(sessions.clockIn, weekStart.toISOString()),
+        lte(sessions.clockIn, weekEnd.toISOString())
+      )
+    );
+
+  const noProject = noProjectRows[0] || { total_ms: 0, session_count: 0 };
+
+  return jsonResponse(
+    200,
+    {
+      projects: projectRows,
+      noProject: {
+        name: 'No Project',
+        total_ms: noProject.total_ms,
+        session_count: noProject.session_count,
+      },
+    },
+    auth.cookies
+  );
 }
 
 export const handler: Handler = async (event) => {
