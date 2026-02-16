@@ -535,28 +535,37 @@ async function loadActiveSession() {
         const data = await API.getActiveSession();
         activeSession = data.active;
 
-        if (activeSession) {
+        if (activeSession && activeSession.clock_in) {
             clockInTime = new Date(activeSession.clock_in);
             totalBreakTime = activeSession.break_time || 0;
             isOnBreak = !!activeSession.is_on_break;
 
             if (activeSession.project_id) {
-                document.getElementById('current-project').value = activeSession.project_id;
+                const projectSelect = document.getElementById('current-project');
+                if (projectSelect) projectSelect.value = activeSession.project_id;
             }
 
             startTimer();
             updateButtonStates(true);
 
             if (isOnBreak) {
-                breakBtn.textContent = 'Resume';
-                breakBtn.classList.add('on-break');
-                breakIndicator.classList.remove('hidden');
-                statusDisplay.textContent = 'On break';
+                if (breakBtn) {
+                    breakBtn.textContent = 'Resume';
+                    breakBtn.classList.add('on-break');
+                }
+                if (breakIndicator) breakIndicator.classList.remove('hidden');
+                if (statusDisplay) statusDisplay.textContent = 'On break';
             }
         } else {
+            // Clear any existing timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             clockInTime = null;
             totalBreakTime = 0;
             isOnBreak = false;
+            activeSession = null;
             updateButtonStates(false);
         }
     } catch (error) {
@@ -565,32 +574,54 @@ async function loadActiveSession() {
 }
 
 function startTimer() {
+    // Clear any existing interval first
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
     statusDisplay.textContent = 'Clocked in since ' + formatTime(clockInTime);
     statusDisplay.classList.add('active');
 
-    timerInterval = setInterval(updateTimer, 1000);
+    // Update immediately, then every second
     updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
 }
 
 function updateTimer() {
+    const homeTimer = document.getElementById('home-timer');
+    const homeTimerStatus = document.getElementById('home-timer-status');
+
     if (!clockInTime) {
-        document.getElementById('home-timer').textContent = '00:00:00';
-        document.getElementById('home-timer-status').textContent = 'Not clocked in';
-        document.getElementById('home-timer-status').classList.remove('active');
+        if (homeTimer) homeTimer.textContent = '00:00:00';
+        if (homeTimerStatus) {
+            homeTimerStatus.textContent = 'Not clocked in';
+            homeTimerStatus.classList.remove('active');
+        }
+        if (timerDisplay) timerDisplay.textContent = '00:00:00';
         return;
     }
 
-    let elapsed = Date.now() - clockInTime.getTime() - totalBreakTime;
-    if (isOnBreak && activeSession && activeSession.break_start) {
-        elapsed -= (Date.now() - new Date(activeSession.break_start).getTime());
-    }
-    const timeStr = formatDuration(Math.max(0, elapsed));
-    timerDisplay.textContent = timeStr;
+    const now = Date.now();
+    let elapsed = now - clockInTime.getTime() - totalBreakTime;
 
-    // Update home timer too
-    document.getElementById('home-timer').textContent = timeStr;
-    document.getElementById('home-timer-status').textContent = isOnBreak ? 'On break' : 'Currently working';
-    document.getElementById('home-timer-status').classList.add('active');
+    // If on break, subtract the current break duration
+    if (isOnBreak && activeSession && activeSession.break_start) {
+        const breakStartTime = new Date(activeSession.break_start).getTime();
+        if (!isNaN(breakStartTime)) {
+            elapsed -= (now - breakStartTime);
+        }
+    }
+
+    const timeStr = formatDuration(Math.max(0, elapsed));
+
+    // Update both timer displays
+    if (timerDisplay) timerDisplay.textContent = timeStr;
+    if (homeTimer) homeTimer.textContent = timeStr;
+    if (homeTimerStatus) {
+        homeTimerStatus.textContent = isOnBreak ? 'On break' : 'Currently working';
+        homeTimerStatus.classList.add('active');
+    }
 }
 
 function formatDuration(ms) {
